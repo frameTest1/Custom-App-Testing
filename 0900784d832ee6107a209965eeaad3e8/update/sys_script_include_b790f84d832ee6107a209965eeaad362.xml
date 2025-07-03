@@ -2,15 +2,15 @@
     <sys_script_include action="INSERT_OR_UPDATE">
         <access>package_private</access>
         <active>true</active>
-        <api_name>x_1397912_custom_0.FileTaxonomys</api_name>
+        <api_name>x_1397912_custom_0.FileTaxonomy</api_name>
         <caller_access/>
         <client_callable>false</client_callable>
         <description/>
         <mobile_callable>false</mobile_callable>
-        <name>FileTaxonomys</name>
+        <name>FileTaxonomy</name>
         <sandbox_callable>false</sandbox_callable>
-        <script><![CDATA[class FileTaxonomys {
-    static type = "FileTaxonomys";
+        <script><![CDATA[class FileTaxonomy {
+    static type = "FileTaxonomy";
     static TABLE = "sn_udc_file_taxonomy_type";
     static SYS_DB_OBJECT = "sys_db_object";
     static SYS_METADATA = "sys_metadata";
@@ -31,7 +31,7 @@
     };
 
     static findTaxonomyType(table, conditionQuery) {
-        var gr = new GlideRecord(FileTaxonomys.TABLE);
+        var gr = new GlideRecord(FileTaxonomy.TABLE);
         gr.addQuery("table", table);
         gr.addQuery("condition_query", conditionQuery);
         gr.setLimit(1);
@@ -40,16 +40,16 @@
     }
 
     static getTypeLabel(table) {
-        const gr = new GlideRecord(FileTaxonomys.TABLE);
+        const gr = new GlideRecord(FileTaxonomy.TABLE);
         gr.addQuery("table", table);
         gr.query();
         const rowCount = gr.getRowCount();
         if (rowCount == 1) {
             gr.next();
-            return gr.getDisplayValue("label") || FileTaxonomys.getTableLabel(table);
+            return gr.getDisplayValue("label") || FileTaxonomy.getTableLabel(table);
         }
         if (rowCount < 1) {
-            return FileTaxonomys.getTableLabel(table);
+            return FileTaxonomy.getTableLabel(table);
         }
 
         // Table has more than one type so we can't find the type with out file sys_id
@@ -64,15 +64,15 @@
         additionalParams
     }) {
         // Find File Taxonomy Builder record either with builderSysId (or) builderName
-        const builderGr = FileTaxonomysBuilder.getRecordForSysIdORName(fileBuilder);
+        const builderGr = FileTaxonomyBuilder.getRecordForSysIdORName(fileBuilder);
         const fileBuilderSysId = builderGr ? builderGr.getUniqueValue() : '';
 
         try {
             // Metadata file (or) Application
-            const fileObject = FileTaxonomys.getArtifactWithPermissionCheck(fileTable, fileSysId);
-            const taxonomy = new FileTaxonomys(fileTable, fileSysId);
-            const builder = new FileTaxonomysBuilder(taxonomy.getFileTaxonomysSysId(), fileObject, fileBuilderSysId);
-            const scopeDetails = FileTaxonomys.getArtifactScopeDetails(fileTable, fileObject, fileScopeSysId);
+            const fileObject = FileTaxonomy.getArtifactWithPermissionCheck(fileTable, fileSysId);
+            const taxonomy = new FileTaxonomy(fileTable, fileSysId);
+            const builder = new FileTaxonomyBuilder(taxonomy.getFileTaxonomySysId(), fileObject, fileBuilderSysId);
+            const scopeDetails = FileTaxonomy.getArtifactScopeDetails(fileTable, fileObject, fileScopeSysId);
             const type = taxonomy.getType();
             const artifactUrl = builder.getEditUrlForMetadata(additionalParams);
             if (artifactUrl.includes('${'))
@@ -91,13 +91,13 @@
                 },
                 file: {
                     type: type,
-                    typeSysId: taxonomy.getFileTaxonomysSysId(),
+                    typeSysId: taxonomy.getFileTaxonomySysId(),
                     table: fileTable,
                     sysId: fileSysId,
                     label: UDCUtil.isNewAsset(fileSysId) ? gs.getMessage("New {0}", [type]) : (taxonomy.getFileLabel() || gs.getMessage('(empty)')),
                     name: taxonomy.getFileName(),
                     scope: scopeDetails,
-                    isMetadataFile: FileTaxonomys.isMetadataFile(fileTable)
+                    isMetadataFile: FileTaxonomy.isMetadataFile(fileTable)
                 },
                 isRegistered: taxonomy.isExists()
             };
@@ -120,7 +120,7 @@
                     break;
 
                 case UDCConstants.errors.FILE_DOES_NOT_EXISTS: {
-                    const typeLabel = FileTaxonomys.getTypeLabel(fileTable) || gs.getMessage("Asset");
+                    const typeLabel = FileTaxonomy.getTypeLabel(fileTable) || gs.getMessage("Asset");
                     message = gs.getMessage("{0} not found: Check the Sys ID and tool name for any errors.", typeLabel);
                     title = gs.getMessage("{0} not found", typeLabel);
                     detail = gs.getMessage("Check the Sys ID and tool name for any errors.");
@@ -130,7 +130,7 @@
                 }
 
                 case UDCConstants.errors.USER_ACCESS_RESTRICTED: {
-                    const typeLabel = FileTaxonomys.getTypeLabel(fileTable) || gs.getMessage("File");
+                    const typeLabel = FileTaxonomy.getTypeLabel(fileTable) || gs.getMessage("File");
                     const appErrorMessage = gs.getMessage("Unable to access these app details: ");
                     const fileErrorMessage = gs.getMessage("Unable to access this file: ");
                     const fullMessage = gs.getMessage("Contact your admin and ask them to update your permissions.")
@@ -153,7 +153,7 @@
                 }
 
                 case UDCConstants.errors.ARTIFACT_URL_GENERATION_FAILED: {
-                    type = FileTaxonomys.getTypeLabel(fileTable) || gs.getMessage("Asset");
+                    type = FileTaxonomy.getTypeLabel(fileTable) || gs.getMessage("Asset");
                     message = gs.getMessage("Artifact URL generation failed: Check the URL configured in the taxonomy.");
                     title = gs.getMessage("Artifact URL generation failed");
                     detail = gs.getMessage("Check the URL configured in the taxonomy.");
@@ -202,32 +202,32 @@
         scopeSysId,
         additionalParams
     }) {
-        const builderGr = FileTaxonomysBuilder.getRecordForSysIdORName(fileBuilder);
+        const builderGr = FileTaxonomyBuilder.getRecordForSysIdORName(fileBuilder);
         const fileBuilderSysId = builderGr ? builderGr.getUniqueValue() : '';
         const fileSysId = sysId;
         let fileTable;
 
         try {
-            const typeGr = new GlideRecord(FileTaxonomys.TABLE);
+            const typeGr = new GlideRecord(FileTaxonomy.TABLE);
             if (!typeGr.get(typeSysId)) {
                 throw UDCConstants.errors.TYPE_DOES_NOT_EXISTS;
             }
             fileTable = typeGr.getValue('table');
-            const configRecord = FileTaxonomysBuilderConfig.getRecordForTaxonomy(typeSysId, fileBuilderSysId);
-            const builder = configRecord?.builder?.getRefRecord() || FileTaxonomysBuilder.getRecordForSysId(FileTaxonomysBuilder.DEFAULT_BUILDER);
-            const type = typeGr.getDisplayValue('label') || FileTaxonomys.getTableLabel(fileTable);
-            const createPath = FileTaxonomysBuilder.substituteDynamicParams(configRecord?.getValue('create_path'), additionalParams);
+            const configRecord = FileTaxonomyBuilderConfig.getRecordForTaxonomy(typeSysId, fileBuilderSysId);
+            const builder = configRecord?.builder?.getRefRecord() || FileTaxonomyBuilder.getRecordForSysId(FileTaxonomyBuilder.DEFAULT_BUILDER);
+            const type = typeGr.getDisplayValue('label') || FileTaxonomy.getTableLabel(fileTable);
+            const createPath = FileTaxonomyBuilder.substituteDynamicParams(configRecord?.getValue('create_path'), additionalParams);
             if (createPath.includes('${'))
                 throw UDCConstants.errors.ARTIFACT_URL_GENERATION_FAILED;
 
             return {
                 url: UDCUtil.createCanonicalizedUri(createPath) || UDCUtil.createCanonicalizedUri(`/${fileTable}.do?sys_id=${fileSysId}`),
-                icon: typeGr.getDisplayValue("icon") || FileTaxonomys.getFallBackIcon(fileTable),
+                icon: typeGr.getDisplayValue("icon") || FileTaxonomy.getFallBackIcon(fileTable),
                 builder: !gs.nil(builder) && builder.isValidRecord() ? {
                     name: builder.getValue('name') || '',
                     label: builder.getDisplayValue('label') || '',
                     sysId: builder.getUniqueValue() || '',
-                    properties: FileTaxonomysBuilder.parseJSONString(builder.getValue('builder_properties')) || {}
+                    properties: FileTaxonomyBuilder.parseJSONString(builder.getValue('builder_properties')) || {}
                 } : {},
                 file: {
                     type,
@@ -235,8 +235,8 @@
                     sysId: fileSysId,
                     label: gs.getMessage('New {0}', [type]),
                     name: '',
-                    scope: FileTaxonomys.#getScopeDetailsFromSysIdOrSession(scopeSysId, fileTable),
-                    isMetadataFile: FileTaxonomys.isMetadataFile(fileTable)
+                    scope: FileTaxonomy.#getScopeDetailsFromSysIdOrSession(scopeSysId, fileTable),
+                    isMetadataFile: FileTaxonomy.isMetadataFile(fileTable)
                 },
             };
         } catch (e) {
@@ -255,7 +255,7 @@
                     break;
 
                 case UDCConstants.errors.ARTIFACT_URL_GENERATION_FAILED: {
-                    type = FileTaxonomys.getTypeLabel(fileTable) || gs.getMessage("Asset");
+                    type = FileTaxonomy.getTypeLabel(fileTable) || gs.getMessage("Asset");
                     message = gs.getMessage("Artifact URL generation failed: Check the URL configured in the taxonomy.");
                     title = gs.getMessage("Artifact URL generation failed");
                     detail = gs.getMessage("Check the URL configured in the taxonomy.");
@@ -289,7 +289,7 @@
 
     static #getScopeDetailsFromSysIdOrSession(fileScopeSysId, fileTable) {
         let scopeSysId = fileScopeSysId || '';
-        if (!FileTaxonomys.isMetadataFile(fileTable)) {
+        if (!FileTaxonomy.isMetadataFile(fileTable)) {
             return {
                 sysId: scopeSysId,
                 label: '',
@@ -325,7 +325,7 @@
     static getArtifactScopeDetails(fileTable, fileObject, fileScopeSysId) {
         // When metadata sysId is -1, consider it as new metadata creation
         if (gs.nil(fileObject))
-            return FileTaxonomys.#getScopeDetailsFromSysIdOrSession(fileScopeSysId, fileTable);
+            return FileTaxonomy.#getScopeDetailsFromSysIdOrSession(fileScopeSysId, fileTable);
 
         // Application scope
         if (UDCUtil.isAppRecord(fileTable))
@@ -336,7 +336,7 @@
             };
 
         // Update set file scope
-        if (FileTaxonomys.isUpdateSetRecord(fileTable) && !gs.nil(fileObject.application)) {
+        if (FileTaxonomy.isUpdateSetRecord(fileTable) && !gs.nil(fileObject.application)) {
             return {
                 sysId: fileObject.getValue('application'),
                 label: fileObject.getDisplayValue('application'),
@@ -402,13 +402,13 @@
     }
 
     /**
-     * Returns FileTaxonomys record. If fileObjectRecord is null then return first matched taxonomy record table.
+     * Returns FileTaxonomy record. If fileObjectRecord is null then return first matched taxonomy record table.
      * @param {String} table
      * @param {GlideRecord|null} fileObjectRecord
-     * @returns {GlideRecord|null} GlideRecord object represents FileTaxonomys record
+     * @returns {GlideRecord|null} GlideRecord object represents FileTaxonomy record
      */
     static getRecord(table, fileObjectRecord) {
-        const taxonomyGr = new GlideRecord(FileTaxonomys.TABLE);
+        const taxonomyGr = new GlideRecord(FileTaxonomy.TABLE);
         taxonomyGr.addQuery("table", table);
         // When there is no fileObject record, then find out first matched taxonomy record with table name
         if (gs.nil(fileObjectRecord)) {
@@ -455,7 +455,7 @@
      * @returns {Object} Object represets taxonomy type map
      */
     static getTaxonomyTypeMap() {
-        const taxonomyTypeMap = UDCUtil.groupBy(FileTaxonomys.getTaxonomyTypesDetails(), 'table');
+        const taxonomyTypeMap = UDCUtil.groupBy(FileTaxonomy.getTaxonomyTypesDetails(), 'table');
         return taxonomyTypeMap;
     }
 
@@ -473,8 +473,8 @@
         if (typeMap.length === 1) {
             return typeMap[0].icon;
         } else if (typeMap.length > 1) {
-            const fileGr = FileTaxonomys.getFileObjectRecord(type, fileId);
-            const typeGr = FileTaxonomys.getRecord(type, fileGr);
+            const fileGr = FileTaxonomy.getFileObjectRecord(type, fileId);
+            const typeGr = FileTaxonomy.getRecord(type, fileGr);
             if (typeGr) {
                 return typeGr.getDisplayValue("icon") || UDCConstants.fallbackIcons.FILE;
             };
@@ -500,14 +500,14 @@
      * @returns {Objects} Object represent taxonomy type validation
      */
     static validateType(typeSysId, fileBuilder) {
-        let gr = new GlideRecord(FileTaxonomys.TABLE);
+        let gr = new GlideRecord(FileTaxonomy.TABLE);
         try {
             if (!gr.get(typeSysId)) {
                 throw UDCConstants.errors.TYPE_DOES_NOT_EXISTS;
             }
-            const builderGr = FileTaxonomysBuilder.getRecordForSysIdORName(fileBuilder);
+            const builderGr = FileTaxonomyBuilder.getRecordForSysIdORName(fileBuilder);
             const fileBuilderSysId = builderGr ? builderGr.getUniqueValue() : '';
-            const configRecord = FileTaxonomysBuilderConfig.getRecordForTaxonomy(typeSysId, fileBuilderSysId);
+            const configRecord = FileTaxonomyBuilderConfig.getRecordForTaxonomy(typeSysId, fileBuilderSysId);
             const builder = configRecord?.builder?.getRefRecord() || null;
             const tableGr = global.UDCGlobal.getGlideRecordForTable(gr.getValue('table'));
 
@@ -517,12 +517,12 @@
                 canRead: tableGr.canRead(),
                 label: gr.getDisplayValue("label") || '',
                 description: gr.getDisplayValue("description") || '',
-                icon: gr.getDisplayValue('icon') || FileTaxonomys.getFallBackIcon(gr.getValue('table')),
+                icon: gr.getDisplayValue('icon') || FileTaxonomy.getFallBackIcon(gr.getValue('table')),
                 builder: !gs.nil(builder) && builder.isValidRecord() ? {
                     name: builder.getValue('name') || '',
                     label: builder.getDisplayValue('label') || '',
                     sysId: builder.getUniqueValue() || '',
-                    properties: FileTaxonomysBuilder.parseJSONString(builder.getValue('builder_properties')) || {}
+                    properties: FileTaxonomyBuilder.parseJSONString(builder.getValue('builder_properties')) || {}
                 } : {}
             };
             return response;
@@ -554,7 +554,7 @@
      * @returns {String} String represent icon name
      */
     static getFallBackIcon(table) {
-        const app = FileTaxonomys.APP_TYPES.find(appType => table in appType);
+        const app = FileTaxonomy.APP_TYPES.find(appType => table in appType);
         if (app) {
             return UDCConstants.fallbackIcons[app[table]] || UDCConstants.fallbackIcons['OTHER_APP'];
         } else {
@@ -579,7 +579,7 @@
      */
     static getTaxonomyTypes() {
         const records = new Map();
-        const gr = new GlideRecord(FileTaxonomys.TABLE);
+        const gr = new GlideRecord(FileTaxonomy.TABLE);
         gr.query();
         while (gr.next()) {
             const table = gr.getValue('table');
@@ -590,7 +590,7 @@
                 icon: gr.getDisplayValue("icon") || UDCConstants.fallbackIcons.FILE,
                 label: gr.getDisplayValue('label'),
                 conditionQuery: gr.getDisplayValue('condition_query'),
-                displayColumn: gr.getDisplayValue('file_label_field') || FileTaxonomys.getTableDisplayName(table),
+                displayColumn: gr.getDisplayValue('file_label_field') || FileTaxonomy.getTableDisplayName(table),
             }
             if (records.has(table)) {
                 records.get(table).push(type);
@@ -608,15 +608,15 @@
     static getTaxonomyStructure() {
         const types = [];
         let otherCategoryTypes = [];
-        const taxonomyTypes = FileTaxonomys.getTaxonomyTypes();
-        const taxonomyCategories = FileTaxonomysCategoryMap.getCatagoriesForType();
-        const gr = new GlideRecord(FileTaxonomys.SYS_DB_OBJECT);
+        const taxonomyTypes = FileTaxonomy.getTaxonomyTypes();
+        const taxonomyCategories = FileTaxonomyCategoryMap.getCatagoriesForType();
+        const gr = new GlideRecord(FileTaxonomy.SYS_DB_OBJECT);
         gr.addEncodedQuery('super_class!=NULL');
         gr.query();
         while (gr.next()) {
             const table = gr.getValue('name');
 
-            if (!FileTaxonomys.isMetadataFile(table))
+            if (!FileTaxonomy.isMetadataFile(table))
                 continue;
 
             if (taxonomyTypes.has(table)) {
@@ -655,12 +655,12 @@
                 typeSysId: null,
                 description: null,
                 icon: UDCConstants.fallbackIcons.FILE,
-                displayColumn: FileTaxonomys.getTableDisplayName(table),
+                displayColumn: FileTaxonomy.getTableDisplayName(table),
             });
             otherCategoryTypes.push(table);
         }
         types.sort((a, b) => a.label > b.label ? 1 : -1);
-        const categories = FileTaxonomysCategoryMap.getCategoriesForFileStructure();
+        const categories = FileTaxonomyCategoryMap.getCategoriesForFileStructure();
         categories.push({
             id: 'other',
             label: gs.getMessage('Other'),
@@ -694,11 +694,11 @@
      * @returns {Object} result or value(based on cache entry) represents types and categories
      */
     static cacheAndGetTaxonomyStructure() {
-        const result = UDCCache.get(FileTaxonomys.TAXONOMY_STRUCTURE_SCOPED_CACHE_NAME, FileTaxonomys.TAXONOMY_STRUCTURE_SCOPED_CACHE_KEY);
+        const result = UDCCache.get(FileTaxonomy.TAXONOMY_STRUCTURE_SCOPED_CACHE_NAME, FileTaxonomy.TAXONOMY_STRUCTURE_SCOPED_CACHE_KEY);
 
         if (!result) {
-            const value = FileTaxonomys.getTaxonomyStructure();
-            UDCCache.put(FileTaxonomys.TAXONOMY_STRUCTURE_SCOPED_CACHE_NAME, FileTaxonomys.TAXONOMY_STRUCTURE_SCOPED_CACHE_KEY, value);
+            const value = FileTaxonomy.getTaxonomyStructure();
+            UDCCache.put(FileTaxonomy.TAXONOMY_STRUCTURE_SCOPED_CACHE_NAME, FileTaxonomy.TAXONOMY_STRUCTURE_SCOPED_CACHE_KEY, value);
             return value;
         }
 
@@ -714,7 +714,7 @@
         taxonomyType = {}
     }) {
         return {
-            ...FileTaxonomys.getFileSpecificDetails({
+            ...FileTaxonomy.getFileSpecificDetails({
                 fileRecord,
                 taxonomyType
             }),
@@ -742,10 +742,10 @@
         let fileDetails = {};
         if (fileTableHandledTaxonomyTypes.length === 1) { // if there is single registered taxonomy type
             const taxonomyType = fileTableHandledTaxonomyTypes[0];
-            const fileObjectRecord = FileTaxonomys.getFileObjectRecord(fileTable, fileSysId);
+            const fileObjectRecord = FileTaxonomy.getFileObjectRecord(fileTable, fileSysId);
             fileDetails = {
                 file: {
-                    ...FileTaxonomys.buildFileDetails({
+                    ...FileTaxonomy.buildFileDetails({
                         fileRecord: fileObjectRecord,
                         fileTable,
                         taxonomyType
@@ -755,11 +755,11 @@
                 icon: taxonomyType.icon
             };
         } else {
-            const taxonomy = new FileTaxonomys(fileTable, fileSysId);
+            const taxonomy = new FileTaxonomy(fileTable, fileSysId);
             fileDetails = {
                 file: {
                     type: taxonomy.getType(),
-                    typeSysId: taxonomy.getFileTaxonomysSysId(),
+                    typeSysId: taxonomy.getFileTaxonomySysId(),
                     table: fileTable,
                     sysId: fileSysId,
                     label: taxonomy.getFileLabel() || gs.getMessage('(empty)'),
@@ -774,7 +774,7 @@
     static getFileDetailsForUnRegisteredTaxonomyType(metadataRecord, fileSysId, fileTable) {
         return {
             file: {
-                ...FileTaxonomys.buildFileDetails({
+                ...FileTaxonomy.buildFileDetails({
                     fileRecord: metadataRecord,
                     fileTable,
                 }),
@@ -785,7 +785,7 @@
     }
 
     static getFilesCountInApp(appSysId) {
-        const metadataRecords = new GlideAggregate(FileTaxonomys.SYS_METADATA);
+        const metadataRecords = new GlideAggregate(FileTaxonomy.SYS_METADATA);
         metadataRecords.addQuery('sys_scope', appSysId);
         metadataRecords.addAggregate('COUNT');
         metadataRecords.query();
@@ -794,7 +794,7 @@
     }
 
     static handleAppFilesLimit(appSysId) {
-        const filesCountInApp = FileTaxonomys.getFilesCountInApp(appSysId);
+        const filesCountInApp = FileTaxonomy.getFilesCountInApp(appSysId);
 
         const softLimit = gs.getProperty('sn_udc.application_files_soft_limit') || 5000;
         const hardLimit = gs.getProperty('sn_udc.application_files_hard_limit') || 15000;
@@ -821,17 +821,17 @@
                 throw UDCConstants.errors.APP_DOES_NOT_EXISTS;
             }
             // Get all taxonomy types grouped by table name
-            var taxonomyTypes = UDCUtil.groupBy(FileTaxonomys.getTaxonomyTypesDetails(), 'table');
+            var taxonomyTypes = UDCUtil.groupBy(FileTaxonomy.getTaxonomyTypesDetails(), 'table');
 
             if (enforceLimit === 'true') {
-                const limitError = FileTaxonomys.handleAppFilesLimit(appSysId);
+                const limitError = FileTaxonomy.handleAppFilesLimit(appSysId);
                 if (limitError) {
                     return limitError;
                 }
             }
             const files = [];
 
-            const metadataRecords = new GlideRecord(FileTaxonomys.SYS_METADATA);
+            const metadataRecords = new GlideRecord(FileTaxonomy.SYS_METADATA);
             metadataRecords.addQuery('sys_class_name', '!=', 'sys_metadata_delete'); // Exclude deleted application files
             metadataRecords.addQuery('sys_scope', appSysId);
             metadataRecords.orderBy('sys_name');
@@ -845,9 +845,9 @@
                 const fileTableHandledTaxonomyTypes = taxonomyTypes[fileTable];
 
                 if (fileTableHandledTaxonomyTypes) { // metadata table has registered taxonomy types
-                    files.push(FileTaxonomys.getFileDetailsForRegisteredTaxonomyType(metadataRecords, fileTableHandledTaxonomyTypes, fileSysId, fileTable));
+                    files.push(FileTaxonomy.getFileDetailsForRegisteredTaxonomyType(metadataRecords, fileTableHandledTaxonomyTypes, fileSysId, fileTable));
                 } else {
-                    files.push(FileTaxonomys.getFileDetailsForUnRegisteredTaxonomyType(metadataRecords, fileSysId, fileTable));
+                    files.push(FileTaxonomy.getFileDetailsForUnRegisteredTaxonomyType(metadataRecords, fileSysId, fileTable));
                 }
             }
 
@@ -879,7 +879,7 @@
 
     static isMetadataFile(fileTable) {
         const tableHierarchy = new GlideTableHierarchy(fileTable);
-        return tableHierarchy.getTables().includes(FileTaxonomys.SYS_METADATA);
+        return tableHierarchy.getTables().includes(FileTaxonomy.SYS_METADATA);
     }
 
     /**
@@ -889,7 +889,7 @@
      */
     static isUpdateSetRecord(fileTable) {
         if (!fileTable) return false;
-        return fileTable === FileTaxonomys.UPDATE_SET_TABLE
+        return fileTable === FileTaxonomy.UPDATE_SET_TABLE
     }
 
     /**
@@ -916,15 +916,15 @@
      * @returns {Array} array of taxonomy type details
      */
     static getTaxonomyTypesDetails(options = {}) {
-        const gr = new GlideRecord(FileTaxonomys.TABLE);
+        const gr = new GlideRecord(FileTaxonomy.TABLE);
         let types = [];
         const {
             taxonomyTypeSysIds = ''
         } = options;
 
         // Get data from cache first
-        let cacheEntryKeyName = FileTaxonomys.#getCacheEntryKeyName(taxonomyTypeSysIds);
-        const result = UDCCache.get(FileTaxonomys.TAXONOMY_TYPES_SCOPED_CACHE_NAME, cacheEntryKeyName);
+        let cacheEntryKeyName = FileTaxonomy.#getCacheEntryKeyName(taxonomyTypeSysIds);
+        const result = UDCCache.get(FileTaxonomy.TAXONOMY_TYPES_SCOPED_CACHE_NAME, cacheEntryKeyName);
         if (result) return result;
 
         // Cache not found
@@ -932,15 +932,15 @@
             gr.addEncodedQuery(`sys_idIN${taxonomyTypeSysIds}`);
             gr.query();
             while (gr.next()) {
-                types.push(FileTaxonomys.getTaxonomyDetailsByGr(gr));
+                types.push(FileTaxonomy.getTaxonomyDetailsByGr(gr));
             }
         } else {
             gr.query();
             while (gr.next()) {
-                types.push(FileTaxonomys.getTaxonomyDetailsByGr(gr));
+                types.push(FileTaxonomy.getTaxonomyDetailsByGr(gr));
             }
         }
-        UDCCache.put(FileTaxonomys.TAXONOMY_TYPES_SCOPED_CACHE_NAME, cacheEntryKeyName, types);
+        UDCCache.put(FileTaxonomy.TAXONOMY_TYPES_SCOPED_CACHE_NAME, cacheEntryKeyName, types);
         return types;
     }
 
@@ -964,13 +964,13 @@
         // If sysId is -1, consider it as a new metadata file
         if (!UDCUtil.isNewAsset(sysId)) {
             // validate file record.
-            this.fileObjectRecord = FileTaxonomys.getFileObjectRecord(this.table, sysId);
+            this.fileObjectRecord = FileTaxonomy.getFileObjectRecord(this.table, sysId);
 
             if (this.fileObjectRecord?.isValidField('sys_class_name')) this.table = this.fileObjectRecord.getValue('sys_class_name');
 
             if ((gs.nil(this.fileObjectRecord) || !this.fileObjectRecord.isValid())) {
 
-                const typeLabel = FileTaxonomys.getTypeLabel(this.table);
+                const typeLabel = FileTaxonomy.getTypeLabel(this.table);
                 if (typeLabel) {
                     const err = new Error(UDCConstants.errors.FILE_DOES_NOT_EXISTS);
                     err.typeLabel = typeLabel;
@@ -982,9 +982,9 @@
         }
 
         // Find taxonomy record from table & fileObjectRecord
-        this.taxonomyRecord = FileTaxonomys.getRecord(this.table, this.fileObjectRecord);
+        this.taxonomyRecord = FileTaxonomy.getRecord(this.table, this.fileObjectRecord);
 
-        this.fileDetailsFromScript = FileTaxonomys.getFileDetailsFromScript(this.taxonomyRecord, this.fileObjectRecord);
+        this.fileDetailsFromScript = FileTaxonomy.getFileDetailsFromScript(this.taxonomyRecord, this.fileObjectRecord);
     }
 
     /**
@@ -1001,10 +1001,10 @@
      */
     getType() {
         if (!this.taxonomyRecord)
-            return FileTaxonomys.getTableLabel(this.table);
+            return FileTaxonomy.getTableLabel(this.table);
 
         return this.taxonomyRecord.getDisplayValue("label") ||
-            FileTaxonomys.getTableLabel(this.taxonomyRecord.getValue("table"));
+            FileTaxonomy.getTableLabel(this.taxonomyRecord.getValue("table"));
     }
 
     /**
@@ -1022,7 +1022,7 @@
      * @returns {String}
      */
     getIcon() {
-        const app = FileTaxonomys.APP_TYPES.find(appType => this.table in appType)
+        const app = FileTaxonomy.APP_TYPES.find(appType => this.table in appType)
         if (app) {
             const appGr = new GlideRecord(this.table);
             if (appGr.get(this.sysId)) {
@@ -1032,7 +1032,7 @@
         if (!this.taxonomyRecord) {
             return UDCConstants.fallbackIcons.FILE;
         }
-        return this.taxonomyRecord.getDisplayValue('icon') || FileTaxonomys.getFallBackIcon(this.table);
+        return this.taxonomyRecord.getDisplayValue('icon') || FileTaxonomy.getFallBackIcon(this.table);
 
     }
 
@@ -1072,7 +1072,7 @@
      * Returns taxonomy record sysId
      * @returns {String}
      */
-    getFileTaxonomysSysId() {
+    getFileTaxonomySysId() {
         if (!this.taxonomyRecord) return "";
 
         return this.taxonomyRecord.getUniqueValue();
@@ -1102,13 +1102,13 @@
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2025-07-03 09:33:19</sys_created_on>
         <sys_id>b790f84d832ee6107a209965eeaad362</sys_id>
-        <sys_mod_count>1</sys_mod_count>
-        <sys_name>FileTaxonomys</sys_name>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>FileTaxonomy</sys_name>
         <sys_package display_value="Custom App Testing" source="x_1397912_custom_0">0900784d832ee6107a209965eeaad3e8</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="Custom App Testing">0900784d832ee6107a209965eeaad3e8</sys_scope>
         <sys_update_name>sys_script_include_b790f84d832ee6107a209965eeaad362</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2025-07-03 09:49:02</sys_updated_on>
+        <sys_updated_on>2025-07-03 10:36:23</sys_updated_on>
     </sys_script_include>
 </record_update>
